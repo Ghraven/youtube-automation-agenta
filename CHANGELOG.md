@@ -102,7 +102,7 @@
 
 ## v2.3
 
-- **Gemini media pipeline** — Gemini image generation (`gemini-3.1-flash-image`) and narration (`gemini-3.1-flash-tts-preview`) are supported. Text and TTS currently have free tiers; AI image generation requires Gemini paid-tier access. Gradient visuals remain the no-image-provider fallback.
+- **Gemini media pipeline** — Gemini image generation (`gemini-2.5-flash-image`) and narration (`gemini-2.5-flash-preview-tts`) are supported. Text and TTS currently have free tiers; AI image generation requires Gemini paid-tier access. Gradient visuals remain the no-image-provider fallback.
 - **Faster slideshow rendering** — the renderer captures one still per slide and uses FFmpeg for video and crossfades
 - **Better template topics** — template mode uses curated evergreen topics and rejects malformed trend fragments
 - **Model catalog correction** — removed the nonexistent `gemini-3.5-pro` entry in favor of supported Gemini models

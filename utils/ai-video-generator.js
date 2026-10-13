@@ -78,7 +78,7 @@ class AIVideoGenerator {
         generatedPath = await this.generateOpenAITTS(text, outputPath);
       } else if (this.gemini) {
         provider = 'gemini';
-        model = process.env.GEMINI_TTS_MODEL || 'gemini-3.1-flash-tts-preview';
+        model = this.getGeminiMediaModels().tts;
         generatedPath = await this.generateGeminiTTS(text, outputPath);
       } else {
         generatedPath = await this.simulateTTSGeneration(text, outputPath);
@@ -160,8 +160,15 @@ class AIVideoGenerator {
     return outputPath;
   }
 
+  getGeminiMediaModels() {
+    return {
+      image: process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image',
+      tts: process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts'
+    };
+  }
+
   async generateGeminiTTS(text, outputPath) {
-    const model = process.env.GEMINI_TTS_MODEL || 'gemini-3.1-flash-tts-preview';
+    const { tts: model } = this.getGeminiMediaModels();
     const voiceName = process.env.GEMINI_TTS_VOICE || 'Kore';
 
     const response = await this.gemini.models.generateContent({
@@ -212,7 +219,11 @@ class AIVideoGenerator {
       this.logger.info(`Generated ${localPaths.length} visual assets`);
       return localPaths;
     } catch (error) {
+      const wasGeminiConfigured = Boolean(this.gemini);
       this.logger.error('Visual asset generation failed:', error);
+      if (wasGeminiConfigured) {
+        throw error;
+      }
       return await this.simulateVisualAssets(prompt, style, count);
     }
   }
@@ -251,7 +262,7 @@ class AIVideoGenerator {
   }
 
   async generateGeminiImage(prompt, imagePath) {
-    const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
+    const { image: model } = this.getGeminiMediaModels();
 
     const response = await this.gemini.models.generateContent({
       model,
