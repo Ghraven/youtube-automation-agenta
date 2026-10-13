@@ -2651,9 +2651,13 @@ class SystemTest {
       }
       if (
         imageRequest?.config?.responseModalities?.[0] !== 'IMAGE' ||
-        imageRequest?.config?.imageConfig?.aspectRatio !== '16:9'
+        imageRequest?.config?.imageConfig?.aspectRatio !== '16:9' ||
+        imageRequest?.model !== 'gemini-2.5-flash-image'
       ) {
-        throw new Error('Gemini image request did not require a widescreen image response');
+        throw new Error('Gemini image request did not use the modern media model or widescreen settings');
+      }
+      if (geminiOnly.getGeminiMediaModels().tts !== 'gemini-2.5-flash-preview-tts') {
+        throw new Error('Gemini TTS default model did not match the current supported media model');
       }
 
       const none = new AIVideoGenerator({});
