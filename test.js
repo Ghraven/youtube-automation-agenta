@@ -35,6 +35,7 @@ class SystemTest {
       { name: 'Scene Repair Studio', test: () => this.testSceneRepairStudio() },
       { name: 'Narration Reliability and Recovery', test: () => this.testNarrationReliability() },
       { name: 'Shorts Repurposing Studio', test: () => this.testShortsRepurposingStudio() },
+      { name: 'Upload-Post Shorts Cross-Posting', test: () => this.testUploadPostCrossPosting() },
       { name: 'Research and Provenance Desk', test: () => this.testProvenanceDesk() },
       { name: 'DarkzSEO Discoverability Preflight', test: () => this.testDiscoverabilityPreflight() },
       { name: 'Open Issue Regressions', test: () => this.testOpenIssueRegressions() },
@@ -1601,6 +1602,81 @@ class SystemTest {
       await fs.rm(directory, { recursive: true, force: true });
     }
     this.logger.info('Shorts Repurposing Studio test completed successfully');
+  }
+
+  async testUploadPostCrossPosting() {
+    const fs = require('fs').promises;
+    const os = require('os');
+    const { ShortsRepurposingService } = require('./utils/shorts-repurposing-service');
+    const { UploadPostCrossPoster } = require('./utils/upload-post-cross-poster');
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'yaa-crosspost-'));
+    const db = new Database();
+    db.dbPath = path.join(directory, 'crosspost.db');
+    await db.initialize();
+
+    try {
+      const productionId = 'prod-crosspost';
+      const videoPath = path.join(directory, 'short.mp4');
+      await fs.writeFile(videoPath, Buffer.from('rendered short'));
+      const [clip] = await db.replaceShortClips(productionId, [{
+        productionId, position: 0, title: 'One idea, three platforms', description: 'Short description',
+        tags: ['Shorts'], sourceSceneIds: ['scene-1'], startSeconds: 0, duration: 20, layout: 'blur',
+        status: 'scheduled', outputPath: videoPath, publishTime: new Date().toISOString(), privacyStatus: 'public',
+        inheritedEvidence: { containsSyntheticMedia: true }
+      }]);
+
+      const calls = [];
+      const fetchImpl = async (url, init = {}) => {
+        calls.push({ url, init });
+        return { ok: true, status: 200, json: async () => ({ success: true, request_id: 'req-123' }) };
+      };
+      const expectStatus = async (promise, status, code) => {
+        try {
+          await promise;
+        } catch (error) {
+          if (error.status === status && (!code || error.code === code)) return;
+          throw new Error(`Expected ${status} ${code || ''}, got ${error.status} ${error.code || ''}: ${error.message}`);
+        }
+        throw new Error(`Expected ${status} ${code || ''}, but the call succeeded`);
+      };
+
+      const disabled = new ShortsRepurposingService(db, {}, {
+        logger: this.logger, crossPoster: new UploadPostCrossPoster({ apiKey: '', user: '', fetchImpl })
+      });
+      await expectStatus(disabled.crossPost(productionId, clip.id, { confirmed: true }), 503, 'CROSS_POST_NOT_CONFIGURED');
+
+      const crossPoster = new UploadPostCrossPoster({ apiKey: 'up-key', user: 'my-brand', platforms: 'instagram,tiktok', fetchImpl });
+      const service = new ShortsRepurposingService(db, {}, { logger: this.logger, crossPoster });
+      await expectStatus(service.crossPost(productionId, clip.id, { confirmed: true }), 409);
+      await db.updateShortClip(clip.id, { status: 'published', youtubeId: 'yt-1' });
+      await expectStatus(service.crossPost(productionId, clip.id, { platforms: ['youtube'], confirmed: true }), 400);
+      await expectStatus(service.crossPost(productionId, clip.id, {}), 409, 'CROSS_POST_CONFIRMATION_REQUIRED');
+      if (calls.length) throw new Error('Upload-Post was called before every gate passed');
+
+      const posted = await service.crossPost(productionId, clip.id, { confirmed: true });
+      const [call] = calls;
+      const form = call.init.body;
+      if (
+        call.url !== 'https://api.upload-post.com/api/upload' ||
+        call.init.headers.Authorization !== 'Apikey up-key' ||
+        call.init.headers['Idempotency-Key'] !== `agenttube-short-${clip.id}-instagram-tiktok` ||
+        form.get('user') !== 'my-brand' || form.getAll('platform[]').join(',') !== 'instagram,tiktok' ||
+        form.get('title') !== 'One idea, three platforms' || form.get('media_type') !== 'REELS' ||
+        form.get('is_aigc') !== 'true' || form.get('async_upload') !== 'true' || !form.get('video')
+      ) {
+        throw new Error('Cross-post request did not match the Upload-Post contract');
+      }
+      if (posted.crossPost.requestId !== 'req-123' || posted.crossPost.platforms.join(',') !== 'instagram,tiktok' || posted.status !== 'published') {
+        throw new Error('Cross-post result was not persisted on the Short');
+      }
+
+      await service.crossPost(productionId, clip.id, { confirmed: true });
+      if (calls.length !== 1) throw new Error('Repeating a cross-post sent a second upload');
+    } finally {
+      await db.close();
+      await fs.rm(directory, { recursive: true, force: true });
+    }
+    this.logger.info('Upload-Post cross-posting test completed successfully');
   }
 
   async testProvenanceDesk() {

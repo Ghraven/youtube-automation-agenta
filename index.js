@@ -690,6 +690,26 @@ class YouTubeAutomationAgent {
       }
     });
 
+    this.app.post('/api/content/:productionId/shorts/:clipId/cross-post', protect, async (req, res) => {
+      try {
+        if (!this.shorts) return res.status(503).json({ error: 'Shorts repurposing requires completed setup' });
+        const result = await this.shorts.crossPost(req.params.productionId, req.params.clipId, req.body || {});
+        return res.json({ success: true, result });
+      } catch (error) {
+        return res.status(error.status || 400).json({ success: false, error: error.message, code: error.code });
+      }
+    });
+
+    this.app.get('/api/content/:productionId/shorts/:clipId/cross-post', protect, async (req, res) => {
+      try {
+        if (!this.shorts) return res.status(503).json({ error: 'Shorts repurposing requires completed setup' });
+        const result = await this.shorts.crossPostStatus(req.params.productionId, req.params.clipId);
+        return res.json({ success: true, result });
+      } catch (error) {
+        return res.status(error.status || 400).json({ success: false, error: error.message, code: error.code });
+      }
+    });
+
     this.app.get('/api/content/:productionId/shorts/:clipId/asset/:kind', async (req, res) => {
       try {
         const clip = await this.db.getShortClip(req.params.clipId);

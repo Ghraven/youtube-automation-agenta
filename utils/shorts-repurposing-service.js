@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { runFFmpeg } = require('./ffmpeg');
 const { Logger } = require('./logger');
+const { UploadPostCrossPoster } = require('./upload-post-cross-poster');
 
 const LAYOUTS = new Set(['blur', 'crop', 'stacked']);
 
@@ -37,6 +38,7 @@ class ShortsRepurposingService {
     this.width = Number(options.width || 1080);
     this.height = Number(options.height || 1920);
     this.runFFmpeg = options.runFFmpeg || runFFmpeg;
+    this.crossPoster = options.crossPoster || new UploadPostCrossPoster();
   }
 
   async propose(productionId, input = {}) {
@@ -311,6 +313,52 @@ class ShortsRepurposingService {
       inheritedEvidence: evidence, approvedAt: new Date().toISOString(), scheduleId: schedule.id,
       error: null
     });
+  }
+
+  async crossPost(productionId, clipId, input = {}) {
+    if (!this.crossPoster.isConfigured()) {
+      const error = new Error('Cross-posting is off. Set UPLOAD_POST_API_KEY and UPLOAD_POST_USER to enable it');
+      error.status = 503;
+      error.code = 'CROSS_POST_NOT_CONFIGURED';
+      throw error;
+    }
+    const clip = await this.requireClip(productionId, clipId);
+    if (clip.status !== 'published') {
+      const error = new Error('Only a Short that is already published on YouTube can be cross-posted');
+      error.status = 409;
+      throw error;
+    }
+    const platforms = this.crossPoster.resolvePlatforms(input.platforms);
+    const previous = clip.crossPost || {};
+    if (previous.requestId && platforms.every(platform => (previous.platforms || []).includes(platform))) return clip;
+    if (input.confirmed !== true) {
+      const error = new Error(`Confirm that this Short should be posted to ${platforms.join(' and ')}`);
+      error.status = 409;
+      error.code = 'CROSS_POST_CONFIRMATION_REQUIRED';
+      throw error;
+    }
+    await this.requireFile(clip.outputPath, 'The rendered Short MP4 is missing');
+    const result = await this.crossPoster.publishShort({
+      clipId: clip.id,
+      videoPath: clip.outputPath,
+      title: clip.title,
+      description: clip.description,
+      platforms,
+      aiGenerated: clip.inheritedEvidence?.containsSyntheticMedia === true
+    });
+    return this.db.updateShortClip(clip.id, {
+      crossPost: { provider: 'upload-post', platforms, ...result, submittedAt: new Date().toISOString() }
+    });
+  }
+
+  async crossPostStatus(productionId, clipId) {
+    const clip = await this.requireClip(productionId, clipId);
+    if (!clip.crossPost?.requestId) {
+      const error = new Error('This Short has not been cross-posted');
+      error.status = 404;
+      throw error;
+    }
+    return { crossPost: clip.crossPost, status: await this.crossPoster.getStatus(clip.crossPost.requestId) };
   }
 
   inheritedEvidence(bundle) {
