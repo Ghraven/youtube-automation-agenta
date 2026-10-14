@@ -106,6 +106,19 @@ const AI_PROVIDER_GUIDE = {
       credentials.aiProvider = { provider: 'glm', apiKey, model };
     },
     validationCreds: (apiKey, model) => ({ aiProvider: { provider: 'glm', apiKey, model } })
+  },
+  cheaperinference: {
+    label: 'Cheaper Inference — OpenAI-compatible gateway, one key for several labs',
+    keyUrl: 'https://cheaperinference.com/signup',
+    keyHint: 'starts with "ci_live_"',
+    instructions: ['Create an account and add credit', 'Create an API key and copy it'],
+    models: [...PROVIDERS.cheaperinference.models],
+    defaultModel: PROVIDERS.cheaperinference.defaultModel,
+    covers: 'scripts only (add a Gemini or OpenAI key for images/voice)',
+    save(credentials, apiKey, model) {
+      credentials.aiProvider = { provider: 'cheaperinference', apiKey, model };
+    },
+    validationCreds: (apiKey, model) => ({ aiProvider: { provider: 'cheaperinference', apiKey, model } })
   }
 };
 

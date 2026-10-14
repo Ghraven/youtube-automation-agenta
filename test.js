@@ -1905,7 +1905,7 @@ class SystemTest {
     const { CredentialManager } = require('./utils/credential-manager');
     const { YouTubeAutomationAgent } = require('./index');
 
-    const envKeys = ['OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'GEMINI_API_KEY', 'MOONSHOT_API_KEY', 'MIMO_API_KEY', 'GLM_API_KEY', 'HOST', 'API_KEY', 'NODE_ENV'];
+    const envKeys = ['OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'GEMINI_API_KEY', 'MOONSHOT_API_KEY', 'MIMO_API_KEY', 'GLM_API_KEY', 'CHEAPER_INFERENCE_API_KEY', 'HOST', 'API_KEY', 'NODE_ENV'];
     const savedEnv = {};
     for (const key of envKeys) {
       savedEnv[key] = process.env[key];
