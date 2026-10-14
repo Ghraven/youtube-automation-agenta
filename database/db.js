@@ -647,13 +647,16 @@ class Database {
     await this.ensureColumns('discoverability_audits', {
       error_code: 'TEXT'
     });
+    await this.ensureColumns('shorts_clips', {
+      cross_post: "TEXT NOT NULL DEFAULT '{}'"
+    });
 
     // Insert default settings
     await this.insertDefaultSettings();
   }
 
   async ensureColumns(tableName, columns) {
-    const allowedTables = new Set(['production_scenes', 'channel_strategies', 'discoverability_audits']);
+    const allowedTables = new Set(['production_scenes', 'channel_strategies', 'discoverability_audits', 'shorts_clips']);
     if (!allowedTables.has(tableName)) throw new Error(`Unsupported migration table: ${tableName}`);
     const existing = new Set((await this.getAllRows(`PRAGMA table_info(${tableName})`)).map(column => column.name));
     for (const [columnName, definition] of Object.entries(columns)) {
@@ -1329,7 +1332,7 @@ class Database {
         title = ?, description = ?, tags = ?, source_scene_ids = ?, start_seconds = ?,
         duration = ?, layout = ?, rationale = ?, status = ?, output_path = ?, captions_path = ?,
         publish_time = ?, privacy_status = ?, inherited_evidence = ?, rendered_at = ?, approved_at = ?,
-        schedule_id = ?, youtube_id = ?, youtube_url = ?, error = ?, updated_at = datetime('now')
+        schedule_id = ?, youtube_id = ?, youtube_url = ?, error = ?, cross_post = ?, updated_at = datetime('now')
        WHERE id = ?`,
       [
         next.title, next.description || '', JSON.stringify(next.tags || []), JSON.stringify(next.sourceSceneIds || []),
@@ -1337,7 +1340,7 @@ class Database {
         next.status || 'proposed', next.outputPath || null, next.captionsPath || null, next.publishTime || null,
         next.privacyStatus || 'private', JSON.stringify(next.inheritedEvidence || {}), next.renderedAt || null,
         next.approvedAt || null, next.scheduleId || null, next.youtubeId || null, next.youtubeUrl || null,
-        next.error || null, id
+        next.error || null, JSON.stringify(next.crossPost || {}), id
       ]
     );
     return this.getShortClip(id);
@@ -1362,7 +1365,8 @@ class Database {
       approvedAt: row.approved_at || null,
       scheduleId: row.schedule_id || null,
       youtubeId: row.youtube_id || null,
-      youtubeUrl: row.youtube_url || null
+      youtubeUrl: row.youtube_url || null,
+      crossPost: JSON.parse(row.cross_post || '{}')
     };
   }
 

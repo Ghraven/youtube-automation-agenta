@@ -100,6 +100,19 @@ Choose a blurred-canvas, center-crop, or stacked-focus layout, then render a rea
 
 Every Short has its own approval and schedule. Scheduling remains blocked until the source production is approved, provenance is resolved, uploaded media rights are confirmed, every source scene is current, and the operator explicitly confirms the Short's privacy and publish time. Published Shorts retain their parent-production identity while their analytics use a separate Shorts baseline.
 
+Optionally, a Short that is already live on YouTube can also go to TikTok and Instagram Reels through [Upload-Post](https://www.upload-post.com). Set `UPLOAD_POST_API_KEY` and `UPLOAD_POST_USER` (the Upload-Post profile with those accounts connected), then confirm the cross-post for one Short:
+
+```bash
+curl -X POST http://localhost:3456/api/content/:productionId/shorts/:clipId/cross-post \
+  -H "Content-Type: application/json" -H "x-api-key: $API_KEY" \
+  -d '{"confirmed": true, "platforms": ["tiktok", "instagram"]}'
+
+# per-platform result
+curl http://localhost:3456/api/content/:productionId/shorts/:clipId/cross-post -H "x-api-key: $API_KEY"
+```
+
+Cross-posting only accepts Shorts whose YouTube upload already succeeded, so it inherits every review gate above. It reuses the rendered MP4, sends an idempotency key so a retried request cannot post twice, and labels the TikTok post as AI-generated when the source production contains synthetic media. Without the two variables the feature stays off.
+
 ### Review research and provenance
 
 Every production has an **Evidence desk** inside Review Studio. Autonomous research carries exact YouTube source metadata into the production, while AI-generated scripts list the factual claims that need review. Add any official articles, datasets, asset licenses, or other evidence that the script needs, verify each source, and connect it to the claims it supports.
