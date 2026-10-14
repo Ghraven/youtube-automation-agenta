@@ -353,6 +353,37 @@ class CredentialManager {
     console.log(chalk.green('GLM credentials configured successfully!'));
   }
 
+  // Cheaper Inference Setup
+  async setupCheaperInferenceCredentials() {
+    console.log(chalk.cyan('\nCheaper Inference Setup'));
+    console.log(chalk.gray('Get your API key from: https://cheaperinference.com/signup'));
+
+    const answers = await inquirer.prompt([
+      {
+        type: 'password',
+        name: 'apiKey',
+        message: 'Enter your Cheaper Inference API Key:',
+        validate: input => input.length > 0 || 'API key is required'
+      },
+      {
+        type: 'list',
+        name: 'model',
+        message: 'Select model:',
+        choices: [...PROVIDERS.cheaperinference.models],
+        default: PROVIDERS.cheaperinference.defaultModel
+      }
+    ]);
+
+    this.credentials.aiProvider = {
+      provider: 'cheaperinference',
+      apiKey: answers.apiKey,
+      model: answers.model
+    };
+
+    await this.saveCredentials();
+    console.log(chalk.green('Cheaper Inference credentials configured successfully!'));
+  }
+
   // Azure Speech Services (TTS)
   async setupAzureSpeechCredentials() {
     console.log(chalk.cyan('\n🎙️  Azure Speech Services Setup'));
@@ -537,7 +568,7 @@ class CredentialManager {
     }
 
     if (!this.hasAITextProvider()) {
-      missing.push('an AI provider (OpenAI, Gemini, OpenRouter, Kimi, MiMo, or GLM)');
+      missing.push('an AI provider (OpenAI, Gemini, OpenRouter, Kimi, MiMo, GLM, or Cheaper Inference)');
     }
 
     return missing;
@@ -647,6 +678,7 @@ class CredentialManager {
           { name: 'Kimi (Moonshot AI — K3)', value: 'kimi' },
           { name: 'MiMo (Xiaomi — V2.5 Pro)', value: 'mimo' },
           { name: 'GLM (Zhipu AI — GLM-5.3)', value: 'glm' },
+          { name: 'Cheaper Inference (OpenAI-compatible gateway)', value: 'cheaperinference' },
         ]
       }
     ]);
@@ -658,6 +690,7 @@ class CredentialManager {
       case 'kimi': return await this.setupKimiCredentials();
       case 'mimo': return await this.setupMiMoCredentials();
       case 'glm': return await this.setupGLMCredentials();
+      case 'cheaperinference': return await this.setupCheaperInferenceCredentials();
     }
   }
 

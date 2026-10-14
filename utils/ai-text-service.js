@@ -46,6 +46,13 @@ const PROVIDERS = {
     models: ['glm-5.3', 'glm-5.2', 'glm-5.1'],
     envKey: 'GLM_API_KEY',
   },
+  cheaperinference: {
+    name: 'Cheaper Inference',
+    baseURL: 'https://api.cheaperinference.com/v1',
+    defaultModel: 'gpt-5.4-mini',
+    models: ['gpt-5.4-mini', 'gpt-5.6-sol', 'claude-fable-5', 'gemini-3.7-flash', 'glm-5.3'],
+    envKey: 'CHEAPER_INFERENCE_API_KEY',
+  },
 };
 
 class AITextService {

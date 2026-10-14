@@ -241,6 +241,7 @@ graph LR
     end
     subgraph Router
         OR[OpenRouter<br/>400+ models]
+        CI[Cheaper Inference]
     end
     Direct --> YAA[YouTube Automation Agent]
     Router --> YAA
@@ -254,6 +255,7 @@ graph LR
 | **Kimi (Moonshot AI)** | Kimi K3, K2.7 Code, K2.6 | `api.moonshot.ai/v1` | provider pricing |
 | **MiMo (Xiaomi)** | MiMo V2.5 Pro, V2.5 | `api.xiaomimimo.com/v1` | provider pricing |
 | **GLM (Zhipu AI)** | GLM-5.3, 5.2, 5.1 | `api.z.ai/api/paas/v4/` | provider pricing |
+| **Cheaper Inference** | GPT-5.4 Mini, GPT-5.6 Sol, Claude Fable 5, Gemini 3.7 Flash, GLM-5.3 | `api.cheaperinference.com/v1` | varies by model |
 
 Additional integrations: Anthropic Claude (`claude-fable-5`), ElevenLabs (Eleven v3 TTS), Replicate (Wan 2.7 video), local models via Ollama, any OpenAI-compatible endpoint.
 
@@ -305,6 +307,11 @@ Long-form productions use hybrid assembly: Lumen generates bounded provider clip
 | MiMo (Xiaomi) | [mimo.mi.com](https://mimo.mi.com) | `MIMO_API_KEY` |
 | GLM (Zhipu AI) | [z.ai](https://z.ai) | `GLM_API_KEY` |
 
+#### Cheaper Inference
+
+1. Get a key from [cheaperinference.com/signup](https://cheaperinference.com/signup)
+2. Set `CHEAPER_INFERENCE_API_KEY` in `.env`
+
 ### Environment Variables
 
 ```env
@@ -315,6 +322,7 @@ OPENAI_API_KEY=sk-...
 # MOONSHOT_API_KEY=...
 # MIMO_API_KEY=...
 # GLM_API_KEY=...
+# CHEAPER_INFERENCE_API_KEY=...
 
 # Optional: premium TTS
 # ELEVENLABS_API_KEY=...
